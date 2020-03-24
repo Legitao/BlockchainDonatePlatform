@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import Identicon from 'identicon.js';
 import './App.css';
 import SocialNetwork from '../abis/SocialNetwork.json'
+//How does this import work
 import Navbar from './Navbar'
 import Main from './Main'
 
@@ -13,6 +14,7 @@ class App extends Component {
     await this.loadBlockchainData()
   }
 
+  // https://medium.com/metamask/https-medium-com-metamask-breaking-change-injecting-web3-7722797916a8
   async loadWeb3() {
     if (window.ethereum) {
       window.web3 = new Web3(window.ethereum)
@@ -28,23 +30,30 @@ class App extends Component {
 
   async loadBlockchainData() {
     const web3 = window.web3
-    // Load account
+    // Load account( the current metamask account)
+    // Array(1)
     const accounts = await web3.eth.getAccounts()
     this.setState({ account: accounts[0] })
     // Network ID
     const networkId = await web3.eth.net.getId()
     const networkData = SocialNetwork.networks[networkId]
     if(networkData) {
-      const socialNetwork = web3.eth.Contract(SocialNetwork.abi, networkData.address)
+      const socialNetwork = new web3.eth.Contract(SocialNetwork.abi, networkData.address)
       this.setState({ socialNetwork })
       const postCount = await socialNetwork.methods.postCount().call()
       this.setState({ postCount })
       // Load Posts
       for (var i = 1; i <= postCount; i++) {
         const post = await socialNetwork.methods.posts(i).call()
-        this.setState({
-          posts: [...this.state.posts, post]
-        })
+        //can't access tippers directly from post.tippers
+        //Because array doesn't have free getter from solidity
+        let tippers = await socialNetwork.methods.getPostTippers(i).call()
+        post["tippers"] = tippers
+        if(post.isValid) {
+          this.setState({
+            posts: [...this.state.posts, post]
+          })
+        }
       }
       // Sort posts. Show highest tipped posts first
       this.setState({
@@ -61,6 +70,8 @@ class App extends Component {
     this.state.socialNetwork.methods.createPost(content).send({ from: this.state.account })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
+      // ??why the page doesn't show updated content without reloading
+      window.location.reload()
     })
   }
 
@@ -69,6 +80,16 @@ class App extends Component {
     this.state.socialNetwork.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
+      window.location.reload()
+    })
+  }
+
+  deletePost(id) {
+    this.setState({ loading: true })
+    this.state.socialNetwork.methods.deletePost(id).send({ from: this.state.account })
+    .once('receipt', (receipt) => {
+      this.setState({ loading: false })
+      window.location.reload()
     })
   }
 
@@ -84,6 +105,7 @@ class App extends Component {
 
     this.createPost = this.createPost.bind(this)
     this.tipPost = this.tipPost.bind(this)
+    this.deletePost = this.deletePost.bind(this)
   }
 
   render() {
@@ -96,6 +118,7 @@ class App extends Component {
               posts={this.state.posts}
               createPost={this.createPost}
               tipPost={this.tipPost}
+              deletePost={this.deletePost}
             />
         }
       </div>
