@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Web3 from 'web3';
 import Identicon from 'identicon.js';
 import './App.css';
-import SocialNetwork from '../abis/SocialNetwork.json'
+import DonatePlatform from '../abis/DonatePlatform.json'
 //How does this import work
 import Navbar from './Navbar'
 import Main from './Main'
@@ -36,18 +36,18 @@ class App extends Component {
     this.setState({ account: accounts[0] })
     // Network ID
     const networkId = await web3.eth.net.getId()
-    const networkData = SocialNetwork.networks[networkId]
+    const networkData = DonatePlatform.networks[networkId]
     if(networkData) {
-      const socialNetwork = new web3.eth.Contract(SocialNetwork.abi, networkData.address)
-      this.setState({ socialNetwork })
-      const postCount = await socialNetwork.methods.postCount().call()
+      const donatePlatform = new web3.eth.Contract(DonatePlatform.abi, networkData.address)
+      this.setState({ donatePlatform })
+      const postCount = await donatePlatform.methods.postCount().call()
       this.setState({ postCount })
       // Load Posts
       for (var i = 1; i <= postCount; i++) {
-        const post = await socialNetwork.methods.posts(i).call()
+        const post = await donatePlatform.methods.posts(i).call()
         //can't access tippers directly from post.tippers
         //Because array doesn't have free getter from solidity
-        let tippers = await socialNetwork.methods.getPostTippers(i).call()
+        let tippers = await donatePlatform.methods.getPostTippers(i).call()
         post["tippers"] = tippers
         if(post.isValid) {
           this.setState({
@@ -61,13 +61,13 @@ class App extends Component {
       })
       this.setState({ loading: false})
     } else {
-      window.alert('SocialNetwork contract not deployed to detected network.')
+      window.alert('DonatePlatform contract not deployed to detected network.')
     }
   }
 
   createPost(content) {
     this.setState({ loading: true })
-    this.state.socialNetwork.methods.createPost(content).send({ from: this.state.account })
+    this.state.donatePlatform.methods.createPost(content).send({ from: this.state.account })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
       // ??why the page doesn't show updated content without reloading
@@ -77,7 +77,7 @@ class App extends Component {
 
   tipPost(id, tipAmount) {
     this.setState({ loading: true })
-    this.state.socialNetwork.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
+    this.state.donatePlatform.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
       window.location.reload()
@@ -86,7 +86,7 @@ class App extends Component {
 
   deletePost(id) {
     this.setState({ loading: true })
-    this.state.socialNetwork.methods.deletePost(id).send({ from: this.state.account })
+    this.state.donatePlatform.methods.deletePost(id).send({ from: this.state.account })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
       window.location.reload()
@@ -97,7 +97,7 @@ class App extends Component {
     super(props)
     this.state = {
       account: '',
-      socialNetwork: null,
+      donatePlatform: null,
       postCount: 0,
       posts: [],
       loading: true

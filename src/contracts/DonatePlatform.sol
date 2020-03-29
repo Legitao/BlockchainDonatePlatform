@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-contract SocialNetwork {
+contract DonatePlatform {
     string public name;
     uint public postCount = 0;
     mapping(uint => Post) public posts;
@@ -8,39 +8,39 @@ contract SocialNetwork {
     struct Post {
         uint id;
         string content;
-        uint tipAmount;
+        uint donationAmount;
         address payable author;
         bool isValid;
-        address[] tippers; //the "free" getter you're using doesn't support the indexed value so it just leaves it out
+        address[] donators; //the "free" getter you're using doesn't support the indexed value so it just leaves it out
     }
 
     event PostCreated(
         uint id,
         string content,
-        uint tipAmount,
+        uint donationAmount,
         address payable author
     );
 
-    event PostTipped(
+    event PostDonated(
         uint id,
         string content,
-        uint tipAmount,
+        uint donationAmount,
         address payable author
     );
 
     event PostDeleted(
         uint id,
         string content,
-        uint tipAmount,
+        uint donationAmount,
         address payable author
     );
 
     constructor() public {
-        name = "Dapp University Social Network";
+        name = "Donation Network";
     }
 
     function getPostTippers(uint256 _id) public returns (address[] memory) {
-        return posts[_id].tippers;
+        return posts[_id].donators;
     }
 
     function createPost(string memory _content) public {
@@ -54,7 +54,7 @@ contract SocialNetwork {
         emit PostCreated(postCount, _content, 0, msg.sender);
     }
 
-    function tipPost(uint _id) public payable {
+    function donatePost(uint _id) public payable {
         // Make sure the id is valid
         require(_id > 0 && _id <= postCount);
         // Fetch the post
@@ -63,15 +63,15 @@ contract SocialNetwork {
         address payable _author = _post.author;
         // Pay the author by sending them Ether
         address(_author).transfer(msg.value);
-        // // Incremet the tip amount
-        // _post.tipAmount = _post.tipAmount + msg.value;
-        // _post.tippers.push(msg.sender);
+        // // Incremet the donate amount
+        // _post.donationAmount = _post.donationAmount + msg.value;
+        // _post.donator.push(msg.sender);
         // // Update the post
         // posts[_id] = _post;
-        posts[_id].tipAmount = _post.tipAmount + msg.value;
-        posts[_id].tippers.push(msg.sender);
+        posts[_id].donationAmount = _post.donationAmount + msg.value;
+        posts[_id].donators.push(msg.sender);
         // Trigger an event
-        emit PostTipped(postCount, _post.content, _post.tipAmount, _author);
+        emit PostDonated(postCount, _post.content, _post.donationAmount, _author);
     }
 
     function deletePost(uint _id) public {
@@ -85,6 +85,6 @@ contract SocialNetwork {
         require(msg.sender == _author);
         _post.isValid = false;
         posts[_id] = _post;
-        emit PostDeleted(postCount, _post.content, _post.tipAmount, _author);
+        emit PostDeleted(_id, _post.content, _post.donationAmount, _author);
     }
 }
