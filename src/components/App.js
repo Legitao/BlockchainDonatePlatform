@@ -45,19 +45,30 @@ class App extends Component {
       // Load Posts
       for (var i = 1; i <= postCount; i++) {
         const post = await donatePlatform.methods.posts(i).call()
-        //can't access tippers directly from post.tippers
-        //Because array doesn't have free getter from solidity
-        let tippers = await donatePlatform.methods.getPostTippers(i).call()
-        post["tippers"] = tippers
+        console.log(post)
         if(post.isValid) {
+          //can't access donators directly from post.donators
+          //Because array doesn't have free getter from solidity
+          let donators = await donatePlatform.methods.getPostDonators(i).call()
+          let donations = await donatePlatform.methods.getPostDonations(i).call() //array of strings
+          let donationInfo = donators.reduce((donationObject, donator, index) => {
+            console.log(index, donator ,donationObject)
+            if(donator in donationObject) {
+              donationObject[donator] += parseInt(donations[index]);
+            } else {
+              donationObject[donator] = parseInt(donations[index]);
+            }
+            return donationObject
+          }, {})
+          post.donationInfo = donationInfo
           this.setState({
             posts: [...this.state.posts, post]
           })
         }
       }
-      // Sort posts. Show highest tipped posts first
+      // Sort posts. Show highest donateped posts first
       this.setState({
-        posts: this.state.posts.sort((a,b) => b.tipAmount - a.tipAmount )
+        posts: this.state.posts.sort((a,b) => b.donateAmount - a.donateAmount )
       })
       this.setState({ loading: false})
     } else {
@@ -75,9 +86,9 @@ class App extends Component {
     })
   }
 
-  tipPost(id, tipAmount) {
+  donatePost(id, donation) {
     this.setState({ loading: true })
-    this.state.donatePlatform.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
+    this.state.donatePlatform.methods.donatePost(id).send({ from: this.state.account, value: donation })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
       window.location.reload()
@@ -104,7 +115,7 @@ class App extends Component {
     }
 
     this.createPost = this.createPost.bind(this)
-    this.tipPost = this.tipPost.bind(this)
+    this.donatePost = this.donatePost.bind(this)
     this.deletePost = this.deletePost.bind(this)
   }
 
@@ -117,7 +128,7 @@ class App extends Component {
           : <Main
               posts={this.state.posts}
               createPost={this.createPost}
-              tipPost={this.tipPost}
+              donatePost={this.donatePost}
               deletePost={this.deletePost}
             />
         }

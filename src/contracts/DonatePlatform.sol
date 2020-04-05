@@ -12,6 +12,7 @@ contract DonatePlatform {
         address payable author;
         bool isValid;
         address[] donators; //the "free" getter you're using doesn't support the indexed value so it just leaves it out
+        uint[] donations;
     }
 
     event PostCreated(
@@ -39,8 +40,12 @@ contract DonatePlatform {
         name = "Donation Network";
     }
 
-    function getPostTippers(uint256 _id) public returns (address[] memory) {
+    function getPostDonators(uint256 _id) public returns (address[] memory) {
         return posts[_id].donators;
+    }
+
+    function getPostDonations(uint256 _id) public returns(uint[] memory) {
+        return posts[_id].donations;
     }
 
     function createPost(string memory _content) public {
@@ -49,7 +54,7 @@ contract DonatePlatform {
         // Increment the post count
         postCount ++;
         // Create the post
-        posts[postCount] = Post(postCount, _content, 0, msg.sender, true, new address[](0));
+        posts[postCount] = Post(postCount, _content, 0, msg.sender, true, new address[](0), new uint[](0));
         // Trigger event
         emit PostCreated(postCount, _content, 0, msg.sender);
     }
@@ -70,6 +75,7 @@ contract DonatePlatform {
         // posts[_id] = _post;
         posts[_id].donationAmount = _post.donationAmount + msg.value;
         posts[_id].donators.push(msg.sender);
+        posts[_id].donations.push(msg.value);
         // Trigger an event
         emit PostDonated(postCount, _post.content, _post.donationAmount, _author);
     }
